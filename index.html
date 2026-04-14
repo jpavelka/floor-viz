@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Wood Floor Visualization</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #1e1e1e;
+      color: #eeeeee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 5px;
+      font-weight: 400;
+      text-align: center;
+    }
+    p {
+      color: #aaaaaa;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    /* Settings Grid */
+    .dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      width: 100%;
+      max-width: 1200px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    .panel {
+      background-color: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      flex: 1;
+      min-width: 300px;
+      max-width: 500px;
+    }
+    .panel h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #cba37b;
+      border-bottom: 1px solid #444;
+      padding-bottom: 10px;
+      font-weight: 500;
+    }
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    label {
+      font-size: 13px;
+      color: #bbbbbb;
+    }
+    input[type="number"] {
+      background-color: #1e1e1e;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 15px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #cba37b;
+    }
+    
+    /* Pattern Builder */
+    .pattern-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+    .pattern-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1e1e1e;
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    .pattern-row span {
+      font-size: 14px;
+      color: #aaa;
+      width: 60px;
+    }
+    .btn-remove {
+      background-color: #5c2b2b;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .btn-remove:hover { background-color: #8a3b3b; }
+    
+    .btn-add {
+      background-color: #3b5c43;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 15px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .btn-add:hover { background-color: #4a7555; }
+
+    /* Summary Panel */
+    .summary-container {
+      background-color: #2a2a2a;
+      padding: 15px 25px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 1200px;
+      box-sizing: border-box;
+    }
+    .summary-title {
+      width: 100%;
+      text-align: center;
+      color: #cba37b;
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+    .summary-item {
+      background-color: #3e2723;
+      padding: 10px 15px;
+      border-radius: 6px;
+      font-size: 15px;
+      border: 1px solid #5d4037;
+    }
+    .summary-item span {
+      color: #e2c29f;
+      font-weight: bold;
+      font-size: 18px;
+      margin-left: 5px;
+    }
+
+    /* SVG Canvas */
+    .svg-container {
+      width: 100%;
+      max-width: 1200px;
+      background-color: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      margin-bottom: 40px;
+      box-sizing: border-box;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .board {
+      stroke: #2a1a17;
+      stroke-width: 0.5px;
+      transition: opacity 0.2s, stroke-width 0.2s;
+      cursor: pointer;
+    }
+    .board:hover {
+      opacity: 0.8;
+      stroke: #fff;
+      stroke-width: 1px;
+    }
+    .dimension-line {
+      stroke: #ffffff;
+      stroke-width: 1.5px;
+    }
+    .dimension-text {
+      fill: #ffffff;
+      font-size: 14px;
+      font-family: monospace;
+      text-anchor: middle;
+    }
+    
+    /* Scrollbar for pattern list */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #1e1e1e; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #777; }
+  </style>
+</head>
+<body>
+
+  <h1>Wood Floor Generator</h1>
+  <p>Define your floor size and build a custom repeating row pattern.</p>
+
+  <div class="dashboard" id="dashboard">
+    <!-- Main Dimensions Panel -->
+    <div class="panel">
+      <h3>1. Floor & Board Dimensions</h3>
+      <div class="input-grid">
+        <div class="input-group">
+          <label>Floor Length (Feet)</label>
+          <input type="number" id="floorLength" value="39" step="0.5" min="1">
+        </div>
+        <div class="input-group">
+          <label>Floor Width (Feet)</label>
+          <input type="number" id="floorWidth" value="28.5" step="0.5" min="1">
+        </div>
+        <div class="input-group">
+          <label>Full Board Length (Feet)</label>
+          <input type="number" id="boardLength" value="6" step="0.5" min="1">
+        </div>
+        <div class="input-group">
+          <label>Board Width (Inches)</label>
+          <input type="number" id="boardWidth" value="5" step="0.5" min="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Pattern Panel -->
+    <div class="panel">
+      <h3>2. Stagger Pattern Builder</h3>
+      <p style="text-align:left; font-size:13px; margin-bottom:10px;">Set the length of the <strong>first board</strong> in each row. The generator will loop this pattern.</p>
+      <div class="pattern-list" id="patternList">
+        <!-- Rows injected here by JS -->
+      </div>
+      <button class="btn-add" onclick="addPatternRow()">+ Add Row to Pattern</button>
+    </div>
+  </div>
+
+  <!-- Summary Panel -->
+  <div class="summary-container" id="summaryContainer"></div>
+
+  <!-- SVG Visualizer -->
+  <div class="svg-container">
+    <svg id="floorSVG" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <script>
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.getElementById("floorSVG");
+    const summaryContainer = document.getElementById("summaryContainer");
+    const patternList = document.getElementById("patternList");
+
+    const variedColors = ["#cba37b", "#d4ae87", "#c2986e", "#d9b48f", "#b98d61", "#cd9f74", "#c49c71"];
+    let patternState = [2, 5, 1, 4]; // Default starting pattern
+
+    // --- Format Helper ---
+    function formatLength(inches) {
+      let rounded = Math.round(inches * 100) / 100;
+      let ft = Math.floor(rounded / 12);
+      let ins = rounded % 12;
+      
+      if (ft > 0 && ins > 0) return `${ft}' ${ins}"`;
+      if (ft > 0 && ins === 0) return `${ft}'`;
+      return `${ins}"`;
+    }
+
+    // --- Pattern UI Management ---
+    function renderPatternList() {
+      patternList.innerHTML = '';
+      patternState.forEach((val, index) => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "pattern-row";
+        
+        rowDiv.innerHTML = `
+          <span>Row ${index + 1}:</span>
+          <input type="number" class="pattern-input" data-index="${index}" value="${val}" step="0.5" min="0.1" title="Start board length in feet">
+          <span style="width: auto;">ft</span>
+          <button class="btn-remove" onclick="removePatternRow(${index})" title="Remove this row">X</button>
+        `;
+        patternList.appendChild(rowDiv);
+      });
+      generateFloor();
+    }
+
+    function addPatternRow() {
+      // Default to half a board length, or 2 feet if board length is missing
+      let bLen = parseFloat(document.getElementById("boardLength").value) || 4;
+      patternState.push(bLen / 2);
+      renderPatternList();
+    }
+
+    function removePatternRow(index) {
+      if (patternState.length <= 1) {
+        alert("You must have at least one row in the pattern.");
+        return;
+      }
+      patternState.splice(index, 1);
+      renderPatternList();
+    }
+
+    // Auto-update state array when a pattern input changes
+    patternList.addEventListener('input', (e) => {
+      if(e.target.classList.contains('pattern-input')) {
+        const idx = e.target.getAttribute('data-index');
+        let val = parseFloat(e.target.value);
+        if(!isNaN(val)) {
+          patternState[idx] = val;
+          generateFloor();
+        }
+      }
+    });
+
+    // Auto-update floor when main inputs change
+    document.getElementById("dashboard").addEventListener('input', (e) => {
+      if(!e.target.classList.contains('pattern-input')) {
+        generateFloor();
+      }
+    });
+
+    // --- Core Generation Engine ---
+    function generateFloor() {
+      const floorL_ft = parseFloat(document.getElementById("floorLength").value) || 1;
+      const floorW_ft = parseFloat(document.getElementById("floorWidth").value) || 1;
+      const boardL_ft = parseFloat(document.getElementById("boardLength").value) || 1;
+      const boardW_in = parseFloat(document.getElementById("boardWidth").value) || 1;
+
+      const totalWidthInches = floorL_ft * 12;
+      const totalHeightInches = floorW_ft * 12;
+      const boardL_in = boardL_ft * 12;
+
+      svg.innerHTML = '';
+      svg.setAttribute("viewBox", `-50 -50 ${totalWidthInches + 100} ${totalHeightInches + 100}`);
+
+      const floorGroup = document.createElementNS(svgNS, "g");
+      const dimGroup = document.createElementNS(svgNS, "g");
+      svg.appendChild(floorGroup);
+      svg.appendChild(dimGroup);
+
+      let boardCounts = {};
+      let y = 0;
+      let rowIndex = 0;
+
+      while (y < totalHeightInches) {
+        let currentHeight = Math.min(boardW_in, totalHeightInches - y);
+        let x = 0;
+        
+        // Fetch start length from dynamic pattern array (cycling via modulo)
+        let patternValFt = patternState[rowIndex % patternState.length];
+        let startLen = patternValFt * 12;
+
+        // Validation: A start board cannot be larger than a full board, nor larger than the room
+        if (startLen > boardL_in) startLen = boardL_in;
+        if (startLen > totalWidthInches) startLen = totalWidthInches;
+        if (startLen <= 0) startLen = boardL_in; // Fallback for bad data
+        
+        let remainingRowSpace = totalWidthInches;
+        
+        while (remainingRowSpace > 0.01) {
+          let currentBoardLen = 0;
+
+          if (x === 0) {
+            currentBoardLen = startLen; // First board applies pattern
+          } else if (remainingRowSpace >= boardL_in) {
+            currentBoardLen = boardL_in; // Middle full boards
+          } else {
+            currentBoardLen = remainingRowSpace; // End capping board
+          }
+
+          // Count the board
+          let countKey = Math.round(currentBoardLen * 100) / 100;
+          boardCounts[countKey] = (boardCounts[countKey] || 0) + 1;
+
+          // Render the rectangle
+          let rect = document.createElementNS(svgNS, "rect");
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", y);
+          rect.setAttribute("width", currentBoardLen);
+          rect.setAttribute("height", currentHeight);
+          rect.setAttribute("class", "board");
+          rect.setAttribute("fill", variedColors[Math.floor(Math.random() * variedColors.length)]);
+
+          let title = document.createElementNS(svgNS, "title");
+          title.textContent = `Row ${rowIndex + 1} | Length: ${formatLength(currentBoardLen)} | Width: ${formatLength(currentHeight)}`;
+          rect.appendChild(title);
+
+          floorGroup.appendChild(rect);
+          
+          x += currentBoardLen;
+          remainingRowSpace -= currentBoardLen;
+        }
+
+        y += currentHeight;
+        rowIndex++;
+      }
+
+      // --- Summary Generation ---
+      summaryContainer.innerHTML = '';
+      
+      let rowTitle = document.createElement("div");
+      rowTitle.className = "summary-title";
+      let finalRowW = formatLength(Math.min(boardW_in, totalHeightInches - (rowIndex-1)*boardW_in));
+      rowTitle.innerHTML = `Total Rows Used: ${rowIndex} <br><small style="color:#888; font-size:13px; font-weight:normal;">(Final row ripped to width: ${finalRowW})</small>`;
+      summaryContainer.appendChild(rowTitle);
+
+      const sortedLengths = Object.keys(boardCounts).map(Number).sort((a, b) => b - a);
+      
+      sortedLengths.forEach(len => {
+        let itemDiv = document.createElement("div");
+        itemDiv.className = "summary-item";
+        itemDiv.innerHTML = `${formatLength(len)} Boards: <span>${boardCounts[len]}</span>`;
+        summaryContainer.appendChild(itemDiv);
+      });
+
+      // --- Dimensions Overlay ---
+      let topDimLine = document.createElementNS(svgNS, "line");
+      topDimLine.setAttribute("x1", 0); topDimLine.setAttribute("y1", -20);
+      topDimLine.setAttribute("x2", totalWidthInches); topDimLine.setAttribute("y2", -20);
+      topDimLine.setAttribute("class", "dimension-line");
+      dimGroup.appendChild(topDimLine);
+
+      for(let tx of [0, totalWidthInches]) {
+        let tick = document.createElementNS(svgNS, "line");
+        tick.setAttribute("x1", tx); tick.setAttribute("y1", -25);
+        tick.setAttribute("x2", tx); tick.setAttribute("y2", -15);
+        tick.setAttribute("class", "dimension-line");
+        dimGroup.appendChild(tick);
+      }
+      let topText = document.createElementNS(svgNS, "text");
+      topText.setAttribute("x", totalWidthInches / 2); topText.setAttribute("y", -30);
+      topText.setAttribute("class", "dimension-text");
+      topText.textContent = `${floorL_ft}' 0"`;
+      dimGroup.appendChild(topText);
+
+      let rightDimLine = document.createElementNS(svgNS, "line");
+      rightDimLine.setAttribute("x1", totalWidthInches + 20); rightDimLine.setAttribute("y1", 0);
+      rightDimLine.setAttribute("x2", totalWidthInches + 20); rightDimLine.setAttribute("y2", totalHeightInches);
+      rightDimLine.setAttribute("class", "dimension-line");
+      dimGroup.appendChild(rightDimLine);
+
+      for(let ty of [0, totalHeightInches]) {
+        let tick = document.createElementNS(svgNS, "line");
+        tick.setAttribute("x1", totalWidthInches + 15); tick.setAttribute("y1", ty);
+        tick.setAttribute("x2", totalWidthInches + 25); tick.setAttribute("y2", ty);
+        tick.setAttribute("class", "dimension-line");
+        dimGroup.appendChild(tick);
+      }
+      let rightText = document.createElementNS(svgNS, "text");
+      rightText.setAttribute("transform", `translate(${totalWidthInches + 40}, ${totalHeightInches / 2}) rotate(90)`);
+      rightText.setAttribute("class", "dimension-text");
+      rightText.textContent = `${floorW_ft}' 0"`;
+      dimGroup.appendChild(rightText);
+    }
+
+    // Initialize UI and render
+    renderPatternList();
+  </script>
+</body>
+</html>
